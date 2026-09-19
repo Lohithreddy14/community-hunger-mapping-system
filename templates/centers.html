@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Food-support centers{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Food-support centers</h1>
+    <p class="page-sub">Locations that provide food assistance. Shown on the interactive map as blue squares.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('main.map_page') }}" class="btn btn-outline-primary">Open interactive map</a>
+  </div>
+</div>
+
+<div class="notice" role="note">
+  <strong>Demonstration data.</strong>
+  The centers below are <span class="badge-sample">Sample data</span>: fictional names and approximate positions used to demonstrate the system. They are not real organisations.
+</div>
+
+<div id="loadError" class="alert alert-danger d-none" role="alert"></div>
+
+<div class="row g-3" id="centerGrid">
+  <div class="col-12 text-muted">Loading...</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/centers.js') }}"></script>
+{% endblock %}

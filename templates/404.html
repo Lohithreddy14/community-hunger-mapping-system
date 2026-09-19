@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Page not found{% endblock %}
+
+{% block content %}
+<div class="empty-state">
+  {% if server_error %}
+  <h1>Something went wrong</h1>
+  <p>The server hit an unexpected error. Check the terminal window running Flask for details, then try again.</p>
+  {% else %}
+  <h1>Page not found</h1>
+  <p>That page or record does not exist. It may have been deleted.</p>
+  {% endif %}
+  <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">Back to the dashboard</a>
+</div>
+{% endblock %}

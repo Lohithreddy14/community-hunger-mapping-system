@@ -1,0 +1,11 @@
+name,latitude,longitude,population,total_families,families_needing_assistance,avg_household_income,food_accessibility,nearby_centers,notes
+Lakeview Colony,12.9352,77.6101,4200,950,190,22000,Moderate,1,SAMPLE DATA - fictional demonstration record. Seasonal income drops reported by some households.
+Green Meadows Layout,13.0358,77.5970,6100,1400,70,48000,Good,3,SAMPLE DATA - fictional demonstration record. Well served by markets and support centers.
+Riverside Settlement,12.9081,77.5476,3500,780,300,14000,Poor,1,SAMPLE DATA - fictional demonstration record. Limited transport to the nearest market.
+Old Railway Quarters,12.9784,77.5713,2800,610,165,16000,Poor,1,SAMPLE DATA - fictional demonstration record. Many daily-wage households.
+Hilltop Nagar,13.0827,77.5504,5200,,260,,Moderate,2,SAMPLE DATA - fictional demonstration record. Total families and income not available (estimated by the model).
+Market Yard Quarters,12.9260,77.6760,3900,860,95,31000,Good,2,SAMPLE DATA - fictional demonstration record. Close to a wholesale market.
+Canal Bank Hamlet,13.0100,77.7000,1800,,110,20000,,2,SAMPLE DATA - fictional demonstration record. Food accessibility not assessed yet.
+Sunrise Apartments Belt,12.9990,77.6400,7200,1900,60,62000,Good,3,SAMPLE DATA - fictional demonstration record. Mostly salaried households.
+Quarry Road Settlement,12.8700,77.5900,2100,470,150,,Poor,1,SAMPLE DATA - fictional demonstration record. Income data not available.
+Orchard Lane Village,13.1200,77.6300,3000,700,105,26000,Moderate,0,SAMPLE DATA - fictional demonstration record. No support center reported nearby.

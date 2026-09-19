@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Community data{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Community data</h1>
+    <p class="page-sub">All saved community records with their estimated vulnerability category.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('main.add_community') }}" class="btn btn-primary">Add community data</a>
+  </div>
+</div>
+
+<div id="loadError" class="alert alert-danger d-none" role="alert"></div>
+<div id="actionMessage" class="alert d-none" role="status"></div>
+
+<div class="panel">
+  <div class="table-toolbar">
+    <div>
+      <label for="searchBox" class="visually-hidden">Search by name</label>
+      <input type="search" class="form-control form-control-sm" id="searchBox" placeholder="Search by name">
+    </div>
+    <div>
+      <label for="categorySelect" class="visually-hidden">Filter by category</label>
+      <select class="form-select form-select-sm" id="categorySelect">
+        <option value="all">All categories</option>
+        <option value="lower">Lower</option>
+        <option value="moderate">Moderate</option>
+        <option value="higher">Higher</option>
+      </select>
+    </div>
+    <div class="toolbar-count" id="rowCount" aria-live="polite"></div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table data-table align-middle mb-0">
+      <thead>
+        <tr>
+          <th scope="col">Community</th>
+          <th scope="col" class="text-end">Population</th>
+          <th scope="col" class="text-end">Families needing assistance</th>
+          <th scope="col">Estimated category</th>
+          <th scope="col">Coordinates</th>
+          <th scope="col" class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="communityBody">
+        <tr><td colspan="6" class="text-muted">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Details modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="detailTitle">Community details</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="detailBody"></div>
+      <div class="modal-footer">
+        <a href="#" class="btn btn-outline-primary" id="detailMapLink">Show on map</a>
+        <a href="#" class="btn btn-primary" id="detailEditLink">Edit</a>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteTitle" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="deleteTitle">Delete this record?</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0" id="deleteText"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep record</button>
+        <button type="button" class="btn btn-danger" id="confirmDelete">Delete record</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/communities.js') }}"></script>
+{% endblock %}

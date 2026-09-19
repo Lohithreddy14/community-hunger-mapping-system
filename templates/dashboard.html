@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="page-sub">Estimated food-insecurity vulnerability across the mapped areas.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('main.map_page') }}" class="btn btn-primary">Open interactive map</a>
+    <a href="{{ url_for('main.add_community') }}" class="btn btn-outline-primary">Add community data</a>
+  </div>
+</div>
+
+<div class="notice" role="note">
+  <strong>Preliminary academic prototype.</strong>
+  Records marked <span class="badge-sample">Sample data</span> are fictional demonstration values, not verified statistics.
+  Vulnerability categories are estimates from a simple scoring model. They do not measure hunger.
+</div>
+
+<div id="loadError" class="alert alert-danger d-none" role="alert"></div>
+
+<section class="row g-3 mb-3" aria-label="Summary figures">
+  <div class="col-12 col-md-4">
+    <div class="panel stat">
+      <div class="stat-label">Mapped areas</div>
+      <div class="stat-value" id="statAreas">-</div>
+      <div class="stat-note" id="statAreasNote">Loading...</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="panel stat">
+      <div class="stat-label">Families reported as needing assistance</div>
+      <div class="stat-value" id="statFamilies">-</div>
+      <div class="stat-note" id="statFamiliesNote">Across all mapped areas</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="panel stat">
+      <div class="stat-label">Food-support centers</div>
+      <div class="stat-value" id="statCenters">-</div>
+      <div class="stat-note"><a href="{{ url_for('main.centers_page') }}">View center list</a></div>
+    </div>
+  </div>
+</section>
+
+<div class="row g-3 mb-3">
+  <section class="col-12 col-xl-7" aria-labelledby="distTitle">
+    <div class="panel h-100">
+      <h2 class="panel-title" id="distTitle">Areas by estimated vulnerability</h2>
+      <div class="dist-bar" id="distBar" role="img" aria-label="Distribution of areas by category">
+        <span class="dist-seg seg-lower" id="seg-lower"></span>
+        <span class="dist-seg seg-moderate" id="seg-moderate"></span>
+        <span class="dist-seg seg-higher" id="seg-higher"></span>
+      </div>
+      <div class="row g-2 mt-2">
+        <div class="col-4">
+          <div class="cat-count cat-count-lower">
+            <div class="cat-count-num" id="count-lower">-</div>
+            <div class="cat-count-label">Lower</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="cat-count cat-count-moderate">
+            <div class="cat-count-num" id="count-moderate">-</div>
+            <div class="cat-count-label">Moderate</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="cat-count cat-count-higher">
+            <div class="cat-count-num" id="count-higher">-</div>
+            <div class="cat-count-label">Higher</div>
+          </div>
+        </div>
+      </div>
+      <div class="table-responsive mt-3">
+        <table class="table data-table align-middle mb-0">
+          <caption class="visually-hidden">Families reported as needing assistance, by estimated category</caption>
+          <thead>
+            <tr>
+              <th scope="col">Category</th>
+              <th scope="col" class="text-end">Areas</th>
+              <th scope="col" class="text-end">Families needing assistance</th>
+              <th scope="col" class="text-end">Share of all families</th>
+            </tr>
+          </thead>
+          <tbody id="catTableBody">
+            <tr><td colspan="4" class="text-muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="col-12 col-xl-5" aria-labelledby="priorityTitle">
+    <div class="panel h-100">
+      <h2 class="panel-title" id="priorityTitle">Highest estimated scores</h2>
+      <ul class="rank-list" id="priorityList"><li class="text-muted">Loading...</li></ul>
+    </div>
+  </section>
+</div>
+
+<div class="row g-3">
+  <section class="col-12 col-xl-8" aria-labelledby="recentTitle">
+    <div class="panel h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="panel-title mb-0" id="recentTitle">Recent community data</h2>
+        <a href="{{ url_for('main.communities_page') }}" class="small">View all records</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table data-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Community</th>
+              <th scope="col" class="text-end">Population</th>
+              <th scope="col" class="text-end">Families needing assistance</th>
+              <th scope="col">Category</th>
+            </tr>
+          </thead>
+          <tbody id="recentBody">
+            <tr><td colspan="4" class="text-muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="col-12 col-xl-4" aria-labelledby="methodTitle">
+    <div class="panel h-100">
+      <h2 class="panel-title" id="methodTitle">How the estimate works</h2>
+      <ul class="method-list" id="methodList"><li class="text-muted">Loading...</li></ul>
+      <p class="small text-muted mb-0" id="methodNote"></p>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

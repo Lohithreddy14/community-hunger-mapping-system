@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% set editing = community_id is not none %}
+{% block title %}{{ 'Edit community' if editing else 'Add community data' }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 id="pageHeading">{{ 'Edit community' if editing else 'Add community data' }}</h1>
+    <p class="page-sub">
+      {% if editing %}Update the record. The estimated category is recalculated when you save.
+      {% else %}Enter what is known about an area. Optional fields can be left blank; the scoring model skips them.{% endif %}
+    </p>
+  </div>
+</div>
+
+<div id="resultBox" class="d-none" role="status" aria-live="polite"></div>
+<div id="formError" class="alert alert-danger d-none" role="alert"></div>
+
+<div class="row g-3">
+  <div class="col-12 col-xl-7">
+    <form id="communityForm" class="panel" novalidate data-edit-id="{{ community_id if editing else '' }}">
+      <div class="row g-3">
+        <div class="col-12">
+          <label for="name" class="form-label">Community or area name <span class="req" title="Required">*</span></label>
+          <input type="text" class="form-control" id="name" name="name" maxlength="100" autocomplete="off"
+                 placeholder="For example: Lakeview Colony">
+          <div class="invalid-feedback" data-error-for="name"></div>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="latitude" class="form-label">Latitude <span class="req" title="Required">*</span></label>
+          <input type="text" inputmode="decimal" class="form-control" id="latitude" name="latitude"
+                 autocomplete="off" placeholder="12.9716">
+          <div class="form-text">Between -90 and 90.</div>
+          <div class="invalid-feedback" data-error-for="latitude"></div>
+        </div>
+        <div class="col-sm-6">
+          <label for="longitude" class="form-label">Longitude <span class="req" title="Required">*</span></label>
+          <input type="text" inputmode="decimal" class="form-control" id="longitude" name="longitude"
+                 autocomplete="off" placeholder="77.5946">
+          <div class="form-text">Between -180 and 180. You can also click the map to fill both.</div>
+          <div class="invalid-feedback" data-error-for="longitude"></div>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="population" class="form-label">Population <span class="req" title="Required">*</span></label>
+          <input type="text" inputmode="numeric" class="form-control" id="population" name="population"
+                 autocomplete="off" placeholder="4200">
+          <div class="invalid-feedback" data-error-for="population"></div>
+        </div>
+        <div class="col-sm-6">
+          <label for="total_families" class="form-label">Total families in the area</label>
+          <input type="text" inputmode="numeric" class="form-control" id="total_families" name="total_families"
+                 autocomplete="off" placeholder="Optional">
+          <div class="form-text">If blank, the model estimates it as population / 4.5.</div>
+          <div class="invalid-feedback" data-error-for="total_families"></div>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="families_needing_assistance" class="form-label">Families reported as needing food assistance <span class="req" title="Required">*</span></label>
+          <input type="text" inputmode="numeric" class="form-control" id="families_needing_assistance"
+                 name="families_needing_assistance" autocomplete="off" placeholder="190">
+          <div class="invalid-feedback" data-error-for="families_needing_assistance"></div>
+        </div>
+        <div class="col-sm-6">
+          <label for="avg_household_income" class="form-label">Average household income (Rs. per month)</label>
+          <input type="text" inputmode="decimal" class="form-control" id="avg_household_income"
+                 name="avg_household_income" autocomplete="off" placeholder="Optional">
+          <div class="invalid-feedback" data-error-for="avg_household_income"></div>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="food_accessibility" class="form-label">Food accessibility</label>
+          <select class="form-select" id="food_accessibility" name="food_accessibility">
+            <option value="">Not known</option>
+            <option value="Good">Good - affordable food is easy to reach</option>
+            <option value="Moderate">Moderate - reachable with some difficulty</option>
+            <option value="Poor">Poor - hard to reach or unaffordable</option>
+          </select>
+          <div class="invalid-feedback" data-error-for="food_accessibility"></div>
+        </div>
+        <div class="col-sm-6">
+          <label for="nearby_centers" class="form-label">Nearby food-support centers</label>
+          <input type="text" inputmode="numeric" class="form-control" id="nearby_centers" name="nearby_centers"
+                 autocomplete="off" placeholder="Optional">
+          <div class="form-text">Count reported for the area. It may include centers not listed in this system.</div>
+          <div class="invalid-feedback" data-error-for="nearby_centers"></div>
+        </div>
+
+        <div class="col-12">
+          <label for="notes" class="form-label">Additional notes</label>
+          <textarea class="form-control" id="notes" name="notes" rows="3" maxlength="500"
+                    placeholder="Optional. Where did this information come from?"></textarea>
+          <div class="invalid-feedback" data-error-for="notes"></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          {{ 'Save changes' if editing else 'Save community data' }}
+        </button>
+        {% if editing %}
+        <a href="{{ url_for('main.communities_page') }}" class="btn btn-outline-secondary">Cancel</a>
+        {% else %}
+        <button type="button" class="btn btn-outline-secondary" id="clearBtn">Clear form</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="col-12 col-xl-5">
+    <div class="panel mb-3">
+      <h2 class="panel-title">Pick a location</h2>
+      <p class="small text-muted">Click the map to set latitude and longitude, or type the coordinates and the pin will follow.</p>
+      <div id="pickerMap" role="application" aria-label="Map for choosing coordinates"></div>
+    </div>
+    <div class="panel">
+      <h2 class="panel-title">What happens when you save</h2>
+      <p class="small mb-2">The form sends the data to the Flask backend, which validates it and stores it in the SQLite database. The dashboard and map read from that same database, so they show the new record straight away.</p>
+      <p class="small text-muted mb-0">The category is calculated by the preliminary scoring model. It is an estimate for planning discussions, not a measurement of hunger.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/add_community.js') }}"></script>
+{% endblock %}
