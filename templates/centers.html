@@ -1,26 +1,114 @@
 {% extends "base.html" %}
-{% block title %}Food-support centers{% endblock %}
+{% block title %}Food Support Centers{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1>Food-support centers</h1>
-    <p class="page-sub">Locations that provide food assistance. Shown on the interactive map as blue squares.</p>
+    <h1>Food Support Centers</h1>
+    <p class="page-sub">Manage registered food banks, community kitchens, and relief centers supporting food security.</p>
   </div>
-  <div class="page-actions">
-    <a href="{{ url_for('main.map_page') }}" class="btn btn-outline-primary">Open interactive map</a>
+  <div class="page-actions d-flex flex-wrap gap-2">
+    <a href="{{ url_for('main.add_center_page', mode='quick') }}" class="btn btn-success">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1" aria-hidden="true">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+      </svg>
+      Quick Add Center
+    </a>
+    <a href="{{ url_for('main.add_center_page') }}" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add New Center
+    </a>
+    <a href="{{ url_for('main.map_page') }}" class="btn btn-outline-primary">Open Interactive Map</a>
   </div>
 </div>
 
 <div class="notice" role="note">
-  <strong>Demonstration data.</strong>
-  The centers below are <span class="badge-sample">Sample data</span>: fictional names and approximate positions used to demonstrate the system. They are not real organisations.
+  <strong>Demonstration and Registered Data.</strong>
+  Centers marked with <span class="badge-sample">Sample data</span> are fictional demonstration records. Records added by users represent registered field support centers. Always verify details prior to field deployment.
 </div>
 
 <div id="loadError" class="alert alert-danger d-none" role="alert"></div>
+<div id="actionAlert" class="alert alert-success d-none" role="status"></div>
 
+<div class="panel mb-3">
+  <div class="row g-2 align-items-center">
+    <div class="col-12 col-md-3">
+      <label for="searchBox" class="visually-hidden">Search centers</label>
+      <input type="search" class="form-control form-control-sm" id="searchBox" placeholder="Search center, contact, address...">
+    </div>
+    <div class="col-6 col-md-2">
+      <label for="communityFilter" class="visually-hidden">Filter by community</label>
+      <select class="form-select form-select-sm" id="communityFilter">
+        <option value="all">All Communities</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label for="typeFilter" class="visually-hidden">Filter by type</label>
+      <select class="form-select form-select-sm" id="typeFilter">
+        <option value="all">All Center Types</option>
+        <option value="NGO">NGO</option>
+        <option value="Community Kitchen">Community Kitchen</option>
+        <option value="Food Bank">Food Bank</option>
+        <option value="Charitable Organization">Charitable Organization</option>
+        <option value="Government Food Support Center">Government Center</option>
+        <option value="Religious or Community Organization">Religious / Community</option>
+        <option value="Food Distribution Center">Food Distribution</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label for="statusFilter" class="visually-hidden">Filter by verification</label>
+      <select class="form-select form-select-sm" id="statusFilter">
+        <option value="all">All Verification Statuses</option>
+        <option value="Verified">Verified</option>
+        <option value="Contacted">Contacted</option>
+        <option value="Newly Added">Newly Added</option>
+        <option value="Information Partially Verified">Partially Verified</option>
+        <option value="Not Contacted">Not Contacted</option>
+        <option value="Unable to Reach">Unable to Reach</option>
+        <option value="Inactive">Inactive</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label for="availFilter" class="visually-hidden">Filter by availability</label>
+      <select class="form-select form-select-sm" id="availFilter">
+        <option value="all">All Availability</option>
+        <option value="Yes">Currently Available</option>
+        <option value="No">Not Available</option>
+        <option value="Unknown">Availability Unknown</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-1 text-md-end text-muted small" id="centerCount" aria-live="polite">
+      Loading...
+    </div>
+  </div>
+</div>
+
+<!-- Center Cards Grid -->
 <div class="row g-3" id="centerGrid">
-  <div class="col-12 text-muted">Loading...</div>
+  <div class="col-12 text-muted">Loading food-support centers...</div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteCenterModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="deleteModalLabel">Delete Food-Support Center?</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to permanently delete <strong id="deleteCenterName"></strong>?</p>
+        <p class="text-danger small mb-0">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep Center</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteCenterBtn">Delete Center</button>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

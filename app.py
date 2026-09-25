@@ -1,11 +1,11 @@
 """
-app.py - Flask backend for the Community Hunger Mapping System (Review 2 prototype).
+app.py - Flask backend for the Community Hunger Mapping System.
 
 How the parts talk to each other
 --------------------------------
   Browser (HTML + CSS + JavaScript + Leaflet)
-        |   1. page requests  (GET /, /map, /add, ...)  -> Flask returns HTML
-        |   2. data requests  (fetch('/api/...'))        -> Flask returns JSON
+        |   1. page requests  (GET /, /map, /add, /communities, /centers, ...) -> Flask returns HTML
+        |   2. data requests  (fetch('/api/...'))                                -> Flask returns JSON
         v
   Flask (this file)  --uses-->  scoring.py (vulnerability analysis)
         |            --uses-->  validation.py (input checks)
@@ -15,11 +15,12 @@ How the parts talk to each other
 Run with:  python app.py    then open  http://127.0.0.1:5000
 """
 
+from datetime import datetime
 from flask import Blueprint, Flask, jsonify, render_template, request
 
 import db
 import scoring
-from validation import validate_community
+from validation import validate_community, validate_food_support_center
 
 RECENT_LIMIT = 5
 PRIORITY_LIMIT = 5
@@ -37,12 +38,14 @@ def api_error(message, status=400, errors=None):
     return jsonify(payload), status
 
 
-def load_centers():
-    rows = db.get_db().execute("SELECT * FROM food_centers ORDER BY id").fetchall()
-    centers = [dict(row) for row in rows]
-    for center in centers:
-        center["is_sample"] = bool(center["is_sample"])
-    return centers
+def load_centers(filters=None):
+    """Load food-support centers from the database with optional filters."""
+    return db.list_centers(db.get_db(), filters)
+
+
+def get_center_or_none(center_id):
+    """Retrieve a single food-support center by ID or return None."""
+    return db.get_center(db.get_db(), center_id)
 
 
 def present_community(row, centers):
@@ -110,6 +113,27 @@ def centers_page():
     return render_template("centers.html")
 
 
+@bp.route("/centers/add")
+def add_center_page():
+    return render_template("add_center.html", center_id=None)
+
+
+@bp.route("/centers/<int:center_id>")
+def center_detail_page(center_id):
+    center = get_center_or_none(center_id)
+    if center is None:
+        return render_template("404.html"), 404
+    return render_template("center_detail.html", center_id=center_id)
+
+
+@bp.route("/centers/<int:center_id>/edit")
+def edit_center_page(center_id):
+    center = get_center_or_none(center_id)
+    if center is None:
+        return render_template("404.html"), 404
+    return render_template("add_center.html", center_id=center_id)
+
+
 # ---------------------------------------------------------------------------
 # API: dashboard statistics
 # ---------------------------------------------------------------------------
@@ -117,6 +141,7 @@ def centers_page():
 def api_stats():
     communities = load_communities()
     centers = load_centers()
+    center_stats = db.get_center_stats(db.get_db())
 
     counts = {"lower": 0, "moderate": 0, "higher": 0}
     families = {"lower": 0, "moderate": 0, "higher": 0}
@@ -141,6 +166,11 @@ def api_stats():
         "total_families_needing_assistance":
             sum(c["families_needing_assistance"] for c in communities),
         "total_centers": len(centers),
+        "verified_centers": center_stats["verified"],
+        "awaiting_contact_centers": center_stats["awaiting_contact"],
+        "incomplete_centers": center_stats["incomplete"],
+        "inactive_centers": center_stats["inactive"],
+        "recent_centers": center_stats["recent"],
         "category_counts": counts,
         "families_by_category": families,
         "sample_records": sum(1 for c in communities if c["is_sample"]),
@@ -209,13 +239,160 @@ def api_delete_community(community_id):
 
 
 # ---------------------------------------------------------------------------
-# API: food-support centers and analysis
+# API: food-support centers
 # ---------------------------------------------------------------------------
-@bp.route("/api/centers")
+@bp.route("/api/centers", methods=["GET"])
 def api_centers():
-    return jsonify(load_centers())
+    filters = {}
+    if request.args.get("search"):
+        filters["search"] = request.args.get("search")
+    if request.args.get("community_id"):
+        try:
+            filters["community_id"] = int(request.args.get("community_id"))
+        except ValueError:
+            pass
+    if request.args.get("center_type"):
+        filters["center_type"] = request.args.get("center_type")
+    if request.args.get("information_status"):
+        filters["information_status"] = request.args.get("information_status")
+    elif request.args.get("status"):
+        filters["information_status"] = request.args.get("status")
+    if request.args.get("availability"):
+        filters["availability_status"] = request.args.get("availability")
+
+    return jsonify(load_centers(filters if filters else None))
 
 
+@bp.route("/api/centers/<int:center_id>", methods=["GET"])
+def api_get_center(center_id):
+    center = get_center_or_none(center_id)
+    if center is None:
+        return api_error("Food-support center not found.", 404)
+    return jsonify(center)
+
+
+@bp.route("/api/centers", methods=["POST"])
+def api_create_center():
+    data = read_json_body()
+    if data is None:
+        return api_error("The request must contain valid JSON.")
+
+    clean, errors = validate_food_support_center(data, allow_missing_coords=True)
+    if errors:
+        return api_error("Please correct the highlighted fields.", 400, errors)
+
+    conn = db.get_db()
+
+    community = None
+    if clean.get("community_id"):
+        community = get_community_or_none(clean["community_id"])
+        if community is None:
+            return api_error("Selected community does not exist.", 400,
+                             {"community_id": "Selected community not found."})
+
+    # If coordinates were not manually selected or typed, inherit community reference coordinates
+    if clean.get("latitude") is None or clean.get("longitude") is None:
+        if community:
+            clean["latitude"] = community["latitude"]
+            clean["longitude"] = community["longitude"]
+            clean["location_source"] = "community_reference"
+        else:
+            return api_error("Please select an existing community or specify coordinates.", 400,
+                             {"community_id": "Please select a community to associate with."})
+
+    new_id = db.insert_center(conn, clean, is_sample=False)
+    created = get_center_or_none(new_id)
+    return jsonify(created), 201
+
+
+@bp.route("/api/centers/<int:center_id>", methods=["PUT"])
+def api_update_center(center_id):
+    existing = get_center_or_none(center_id)
+    if existing is None:
+        return api_error("Food-support center not found.", 404)
+
+    data = read_json_body()
+    if data is None:
+        return api_error("The request must contain valid JSON.")
+
+    clean, errors = validate_food_support_center(data, allow_missing_coords=True)
+    if errors:
+        return api_error("Please correct the highlighted fields.", 400, errors)
+
+    conn = db.get_db()
+    community = None
+    if clean.get("community_id"):
+        community = get_community_or_none(clean["community_id"])
+        if community is None:
+            return api_error("Selected community does not exist.", 400,
+                             {"community_id": "Selected community not found."})
+
+    if clean.get("latitude") is None or clean.get("longitude") is None:
+        if community:
+            clean["latitude"] = community["latitude"]
+            clean["longitude"] = community["longitude"]
+            clean["location_source"] = "community_reference"
+        else:
+            clean["latitude"] = existing["latitude"]
+            clean["longitude"] = existing["longitude"]
+
+    db.update_center(conn, center_id, clean)
+    return jsonify(get_center_or_none(center_id))
+
+
+@bp.route("/api/centers/<int:center_id>/status", methods=["PATCH"])
+def api_update_center_status(center_id):
+    existing = get_center_or_none(center_id)
+    if existing is None:
+        return api_error("Food-support center not found.", 404)
+
+    data = read_json_body()
+    if data is None:
+        return api_error("The request must contain valid JSON.")
+
+    action = data.get("action")
+    status_data = {}
+    today_str = datetime.now().strftime("%Y-%m-%d")
+
+    if action == "mark_contacted":
+        status_data["information_status"] = "Contacted"
+        status_data["last_contacted_date"] = data.get("last_contacted_date") or today_str
+        if data.get("contacted_by"):
+            status_data["contacted_by"] = str(data["contacted_by"]).strip()[:100]
+        if data.get("contact_notes"):
+            status_data["contact_notes"] = str(data["contact_notes"]).strip()[:1000]
+        if data.get("next_followup_date"):
+            status_data["next_followup_date"] = str(data["next_followup_date"]).strip()[:30]
+    elif action == "mark_verified":
+        status_data["information_status"] = "Verified"
+        if data.get("verification_notes"):
+            status_data["verification_notes"] = str(data["verification_notes"]).strip()[:1000]
+    else:
+        for field in ("information_status", "availability_status", "contact_attempt_date",
+                      "last_contacted_date", "next_followup_date", "contacted_by",
+                      "contact_notes", "information_source", "verification_notes"):
+            if field in data and data[field] is not None:
+                status_data[field] = str(data[field]).strip()
+
+    db.update_center_status(db.get_db(), center_id, status_data)
+    return jsonify(get_center_or_none(center_id))
+
+
+@bp.route("/api/centers/<int:center_id>", methods=["DELETE"])
+def api_delete_center(center_id):
+    if not db.delete_center(db.get_db(), center_id):
+        return api_error("Food-support center not found.", 404)
+    return jsonify({"deleted": center_id})
+
+
+@bp.route("/api/center-stats")
+def api_center_stats():
+    return jsonify(db.get_center_stats(db.get_db()))
+
+
+# ---------------------------------------------------------------------------
+# API: vulnerability analysis
+# ---------------------------------------------------------------------------
 @bp.route("/api/analysis")
 def api_analysis():
     """Vulnerability analysis results for every community, plus the method used."""
@@ -258,7 +435,7 @@ def create_app(test_config=None):
     if test_config:
         app.config.update(test_config)
 
-    # Create the database (and load the sample data) on the very first start.
+    # Create or migrate database on startup
     db.init_db(app.config["DATABASE"])
 
     app.teardown_appcontext(db.close_db)

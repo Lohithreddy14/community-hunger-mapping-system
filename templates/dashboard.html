@@ -5,11 +5,12 @@
 <div class="page-header">
   <div>
     <h1>Dashboard</h1>
-    <p class="page-sub">Estimated food-insecurity vulnerability across the mapped areas.</p>
+    <p class="page-sub">Estimated food-insecurity vulnerability and food-support center network status.</p>
   </div>
-  <div class="page-actions">
+  <div class="page-actions d-flex flex-wrap gap-2">
     <a href="{{ url_for('main.map_page') }}" class="btn btn-primary">Open interactive map</a>
-    <a href="{{ url_for('main.add_community') }}" class="btn btn-outline-primary">Add community data</a>
+    <a href="{{ url_for('main.centers_page') }}" class="btn btn-outline-primary">Manage Food-Support Centers</a>
+    <a href="{{ url_for('main.add_community') }}" class="btn btn-outline-secondary">Add community data</a>
   </div>
 </div>
 
@@ -21,30 +22,89 @@
 
 <div id="loadError" class="alert alert-danger d-none" role="alert"></div>
 
+<!-- Top Summary Cards -->
 <section class="row g-3 mb-3" aria-label="Summary figures">
   <div class="col-12 col-md-4">
-    <div class="panel stat">
+    <div class="panel stat h-100">
       <div class="stat-label">Mapped areas</div>
       <div class="stat-value" id="statAreas">-</div>
       <div class="stat-note" id="statAreasNote">Loading...</div>
     </div>
   </div>
   <div class="col-12 col-md-4">
-    <div class="panel stat">
+    <div class="panel stat h-100">
       <div class="stat-label">Families reported as needing assistance</div>
       <div class="stat-value" id="statFamilies">-</div>
       <div class="stat-note" id="statFamiliesNote">Across all mapped areas</div>
     </div>
   </div>
   <div class="col-12 col-md-4">
-    <div class="panel stat">
-      <div class="stat-label">Food-support centers</div>
+    <div class="panel stat h-100">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="stat-label">Food-support centers</div>
+        <a href="{{ url_for('main.centers_page') }}" class="small fw-medium">View all</a>
+      </div>
       <div class="stat-value" id="statCenters">-</div>
-      <div class="stat-note"><a href="{{ url_for('main.centers_page') }}">View center list</a></div>
+      <div class="stat-note" id="statCentersNote">
+        <span class="text-success fw-medium" id="statCentersVerified">0</span> verified &bull;
+        <span class="text-warning fw-medium" id="statCentersAwaiting">0</span> awaiting contact
+      </div>
     </div>
   </div>
 </section>
 
+<!-- Food Support Centers Verification & Operational Status Card -->
+<section class="panel p-3 mb-3" aria-labelledby="fscTitle">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+    <div>
+      <h2 class="panel-title mb-0" id="fscTitle">Food Support Center Network Overview</h2>
+      <p class="small text-muted mb-0">Verification pipeline and operational readiness of registered centers.</p>
+    </div>
+    <div class="mt-2 mt-md-0">
+      <a href="{{ url_for('main.centers_page') }}" class="btn btn-outline-primary btn-sm">
+        Manage Food-Support Centers
+      </a>
+      <a href="{{ url_for('main.add_center_page', mode='quick') }}" class="btn btn-success btn-sm ms-1">
+        Quick Add Center
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-2 text-center mt-1">
+    <div class="col-6 col-md-2">
+      <div class="p-2 rounded bg-light border">
+        <div class="h5 mb-0 fw-bold" id="fscTotalCount">-</div>
+        <div class="small text-muted">Total Centers</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <div class="p-2 rounded bg-light border border-success">
+        <div class="h5 mb-0 fw-bold text-success" id="fscVerifiedCount">-</div>
+        <div class="small text-success">Verified</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="p-2 rounded bg-light border border-primary">
+        <div class="h5 mb-0 fw-bold text-primary" id="fscAwaitingCount">-</div>
+        <div class="small text-primary">Awaiting Contact</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="p-2 rounded bg-light border border-warning">
+        <div class="h5 mb-0 fw-bold text-warning" id="fscIncompleteCount">-</div>
+        <div class="small text-warning">Partially Verified</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-2">
+      <div class="p-2 rounded bg-light border border-danger">
+        <div class="h5 mb-0 fw-bold text-danger" id="fscInactiveCount">-</div>
+        <div class="small text-danger">Inactive / Paused</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Vulnerability Distribution and Priority Scores -->
 <div class="row g-3 mb-3">
   <section class="col-12 col-xl-7" aria-labelledby="distTitle">
     <div class="panel h-100">
@@ -101,8 +161,9 @@
   </section>
 </div>
 
-<div class="row g-3">
-  <section class="col-12 col-xl-8" aria-labelledby="recentTitle">
+<!-- Recent Community Data and Recent Food Support Centers -->
+<div class="row g-3 mb-3">
+  <section class="col-12 col-xl-6" aria-labelledby="recentTitle">
     <div class="panel h-100">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h2 class="panel-title mb-0" id="recentTitle">Recent community data</h2>
@@ -126,8 +187,36 @@
     </div>
   </section>
 
-  <section class="col-12 col-xl-4" aria-labelledby="methodTitle">
+  <!-- Recent Food-Support Centers Section -->
+  <section class="col-12 col-xl-6" aria-labelledby="recentCentersTitle">
     <div class="panel h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="panel-title mb-0" id="recentCentersTitle">Recent Food-Support Centers</h2>
+        <a href="{{ url_for('main.centers_page') }}" class="small">Manage all centers</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table data-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Center Name</th>
+              <th scope="col">Type</th>
+              <th scope="col">Community</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody id="recentCentersBody">
+            <tr><td colspan="4" class="text-muted">Loading centers...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Methodology Explanation Panel -->
+<div class="row g-3">
+  <section class="col-12" aria-labelledby="methodTitle">
+    <div class="panel">
       <h2 class="panel-title" id="methodTitle">How the estimate works</h2>
       <ul class="method-list" id="methodList"><li class="text-muted">Loading...</li></ul>
       <p class="small text-muted mb-0" id="methodNote"></p>

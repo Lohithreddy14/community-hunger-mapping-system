@@ -27,7 +27,7 @@
     (['main.map_page'], url_for('main.map_page'), 'Interactive map', 'map'),
     (['main.add_community'], url_for('main.add_community'), 'Add community data', 'plus'),
     (['main.communities_page', 'main.edit_community'], url_for('main.communities_page'), 'Community data', 'list'),
-    (['main.centers_page'], url_for('main.centers_page'), 'Food-support centers', 'pin'),
+    (['main.centers_page', 'main.add_center_page', 'main.center_detail_page', 'main.edit_center_page'], url_for('main.centers_page'), 'Food Support Centers', 'pin'),
   ] %}
   <nav class="side-nav" aria-label="Main navigation">
     {% for endpoints, url, label, icon_name in items %}

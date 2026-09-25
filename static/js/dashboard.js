@@ -4,6 +4,18 @@
   const $ = function (id) { return document.getElementById(id); };
   const KEYS = ["lower", "moderate", "higher"];
 
+  function verificationBadge(status) {
+    status = status || "Newly Added";
+    let cls = "bg-secondary";
+    if (status === "Verified") cls = "bg-success";
+    else if (status === "Contacted") cls = "bg-primary";
+    else if (status === "Information Partially Verified") cls = "bg-warning text-dark";
+    else if (status === "Newly Added") cls = "bg-info text-dark";
+    else if (status === "Unable to Reach" || status === "Inactive") cls = "bg-danger";
+
+    return '<span class="badge ' + cls + '">' + escapeHtml(status) + '</span>';
+  }
+
   function renderStats(stats) {
     $("statAreas").textContent = formatNumber(stats.total_areas);
     $("statAreasNote").textContent =
@@ -11,7 +23,16 @@
     $("statFamilies").textContent = formatNumber(stats.total_families_needing_assistance);
     $("statFamiliesNote").textContent =
       "Population of mapped areas: " + formatNumber(stats.total_population);
+
     $("statCenters").textContent = formatNumber(stats.total_centers);
+    if ($("statCentersVerified")) $("statCentersVerified").textContent = formatNumber(stats.verified_centers || 0);
+    if ($("statCentersAwaiting")) $("statCentersAwaiting").textContent = formatNumber(stats.awaiting_contact_centers || 0);
+
+    if ($("fscTotalCount")) $("fscTotalCount").textContent = formatNumber(stats.total_centers);
+    if ($("fscVerifiedCount")) $("fscVerifiedCount").textContent = formatNumber(stats.verified_centers || 0);
+    if ($("fscAwaitingCount")) $("fscAwaitingCount").textContent = formatNumber(stats.awaiting_contact_centers || 0);
+    if ($("fscIncompleteCount")) $("fscIncompleteCount").textContent = formatNumber(stats.incomplete_centers || 0);
+    if ($("fscInactiveCount")) $("fscInactiveCount").textContent = formatNumber(stats.inactive_centers || 0);
 
     const total = stats.total_areas;
     const parts = [];
@@ -67,6 +88,31 @@
     }).join("");
   }
 
+  function renderRecentCenters(list) {
+    const body = $("recentCentersBody");
+    if (!body) return;
+    if (!list || !list.length) {
+      body.innerHTML = '<tr><td colspan="4" class="empty-row">No food-support centers registered yet. ' +
+        '<a href="/centers/add?mode=quick">Quick add the first center</a>.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = list.map(function (k) {
+      const name = k.center_name || k.name;
+      return "<tr>" +
+        "<td>" +
+          '<a href="/centers/' + k.id + '" class="fw-medium text-decoration-none">' +
+            escapeHtml(name) +
+          '</a>' + sampleBadge(k) +
+          '<div class="small text-muted">' + escapeHtml(k.phone_number || "No phone") + '</div>' +
+        "</td>" +
+        '<td><span class="badge bg-light text-primary border">' + escapeHtml(k.center_type || "NGO") + '</span></td>' +
+        '<td>' + escapeHtml(k.community_name || "Unassigned") + '</td>' +
+        '<td>' + verificationBadge(k.information_status) + '</td>' +
+        "</tr>";
+    }).join("");
+  }
+
   function renderMethod(method) {
     $("methodList").innerHTML = method.indicators.map(function (item) {
       return "<li><strong>" + escapeHtml(item.label) + "</strong> (weight " +
@@ -82,6 +128,7 @@
       renderStats(stats);
       renderPriority(stats.highest_scores);
       renderRecent(stats.recent);
+      renderRecentCenters(stats.recent_centers);
     } catch (err) {
       showLoadError("Could not load dashboard figures. " + err.message);
     }

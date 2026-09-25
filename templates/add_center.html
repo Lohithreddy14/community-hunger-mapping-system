@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+{% set editing = center_id is not none %}
+{% block title %}{{ 'Edit Food Support Center' if editing else 'Register Food Support Center' }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 id="pageHeading">{{ 'Edit Food Support Center' if editing else 'Register Food Support Center' }}</h1>
+    <p class="page-sub">
+      {% if editing %}Update organization information, location, food assistance services, and verification records.
+      {% else %}Add a food bank, community kitchen, or emergency food provider to the system.{% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('main.centers_page') }}" class="btn btn-outline-secondary">Back to Center List</a>
+  </div>
+</div>
+
+<div id="resultBox" class="d-none" role="status" aria-live="polite"></div>
+<div id="formError" class="alert alert-danger d-none" role="alert"></div>
+
+{% if not editing %}
+<!-- Mode Switch Tabs -->
+<ul class="nav nav-pills mb-4" id="modeTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active fw-medium px-4 py-2" id="quick-tab" data-bs-toggle="pill" data-bs-target="#quickModePane" type="button" role="tab" aria-controls="quickModePane" aria-selected="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1" aria-hidden="true">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+      </svg>
+      Quick Add Mode (Fastest - 15 Seconds)
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link fw-medium px-4 py-2" id="full-tab" data-bs-toggle="pill" data-bs-target="#fullModePane" type="button" role="tab" aria-controls="fullModePane" aria-selected="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1" aria-hidden="true">
+        <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
+      Complete Registration Form
+    </button>
+  </li>
+</ul>
+{% endif %}
+
+<div class="tab-content" id="modeTabContent">
+
+  <!-- ============================================================== -->
+  <!-- QUICK ADD MODE PANE -->
+  <!-- ============================================================== -->
+  {% if not editing %}
+  <div class="tab-pane fade show active" id="quickModePane" role="tabpanel" aria-labelledby="quick-tab">
+    <div class="row g-3">
+      <div class="col-12 col-lg-8">
+        <form id="quickCenterForm" class="panel p-4" novalidate>
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+            <h2 class="h5 mb-0 text-success d-flex align-items-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-2" aria-hidden="true">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              Quick Registration (Under 15 Seconds)
+            </h2>
+            <span class="badge bg-light text-muted border">Coordinates auto-filled from community</span>
+          </div>
+
+          <p class="small text-muted mb-4">
+            Quickly register basic center contact information. The center coordinates will be provisionally associated with the selected community area so you don't have to look up latitude/longitude. You can contact the center later to verify detailed services.
+          </p>
+
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="q_center_name" class="form-label">Center Name <span class="req">*</span></label>
+              <input type="text" class="form-control" id="q_center_name" name="center_name" placeholder="e.g. Annapurna Community Kitchen" required autocomplete="off">
+              <div class="invalid-feedback" data-error-for="center_name"></div>
+            </div>
+
+            <div class="col-sm-6">
+              <label for="q_center_type" class="form-label">Center Type</label>
+              <select class="form-select" id="q_center_type" name="center_type">
+                <option value="NGO">NGO</option>
+                <option value="Community Kitchen" selected>Community Kitchen</option>
+                <option value="Food Bank">Food Bank</option>
+                <option value="Charitable Organization">Charitable Organization</option>
+                <option value="Government Food Support Center">Government Food Support Center</option>
+                <option value="Religious or Community Organization">Religious or Community Organization</option>
+                <option value="Food Distribution Center">Food Distribution Center</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="col-sm-6">
+              <label for="q_community_id" class="form-label">Community Area <span class="req">*</span></label>
+              <select class="form-select" id="q_community_id" name="community_id" required>
+                <option value="">Select community area...</option>
+              </select>
+              <div class="form-text">Coordinates will automatically link to this community.</div>
+              <div class="invalid-feedback" data-error-for="community_id"></div>
+            </div>
+
+            <div class="col-sm-6">
+              <label for="q_phone_number" class="form-label">Primary Phone Number <span class="req">*</span></label>
+              <input type="tel" class="form-control" id="q_phone_number" name="phone_number" placeholder="e.g. +91 98450 12345" required autocomplete="off">
+              <div class="invalid-feedback" data-error-for="phone_number"></div>
+            </div>
+
+            <div class="col-sm-6">
+              <label for="q_website" class="form-label">Website Link (Optional)</label>
+              <input type="url" class="form-control" id="q_website" name="website" placeholder="https://example.org" autocomplete="off">
+              <div class="invalid-feedback" data-error-for="website"></div>
+            </div>
+
+            <div class="col-12">
+              <label for="q_address" class="form-label">Physical Address (Optional)</label>
+              <input type="text" class="form-control" id="q_address" name="address" placeholder="Street, building, or area description">
+              <div class="invalid-feedback" data-error-for="address"></div>
+            </div>
+
+            <div class="col-12">
+              <label for="q_description" class="form-label">Short Notes (Optional)</label>
+              <textarea class="form-control" id="q_description" name="description" rows="2" placeholder="e.g. Serves warm meals every lunch hour. Needs volunteer follow-up."></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions mt-4 pt-2 border-top">
+            <button type="submit" class="btn btn-success px-4" id="quickSubmitBtn">
+              Save Center
+            </button>
+            <button type="reset" class="btn btn-outline-secondary">Clear</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="panel p-3 mb-3 bg-light">
+          <h3 class="h6 fw-bold">Why Quick Add?</h3>
+          <p class="small text-muted mb-2">
+            Field workers often discover a food bank or community kitchen and only have its name, community area, and phone number.
+          </p>
+          <ul class="small text-muted ps-3 mb-3">
+            <li>Zero manual coordinate typing needed.</li>
+            <li>Automatically marks status as <strong>Newly Added</strong> and unverified.</li>
+            <li>Enables field coordinators to call and verify full service details later.</li>
+          </ul>
+          <div class="alert alert-info py-2 small mb-0">
+            <strong>Provisional Coordinates:</strong> The center inherits coordinates from the selected community area as a provisional reference until verified.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ============================================================== -->
+  <!-- COMPLETE REGISTRATION / EDIT FORM -->
+  <!-- ============================================================== -->
+  <div class="tab-pane fade {% if editing %}show active{% endif %}" id="fullModePane" role="tabpanel" aria-labelledby="full-tab">
+    <form id="fullCenterForm" class="panel p-4" novalidate data-edit-id="{{ center_id if editing else '' }}">
+
+      <!-- SECTION A: BASIC CENTER INFORMATION -->
+      <section class="mb-4">
+        <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+          <span class="badge bg-primary rounded-circle me-2 p-2">A</span>
+          <h2 class="h5 mb-0">Basic Center Information</h2>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-7">
+            <label for="f_center_name" class="form-label">Center Name <span class="req">*</span></label>
+            <input type="text" class="form-control" id="f_center_name" name="center_name" maxlength="150" required placeholder="e.g. Care & Share Food Bank" autocomplete="off">
+            <div class="invalid-feedback" data-error-for="center_name"></div>
+          </div>
+
+          <div class="col-12 col-md-5">
+            <label for="f_center_type" class="form-label">Center Type</label>
+            <select class="form-select" id="f_center_type" name="center_type">
+              <option value="NGO">NGO</option>
+              <option value="Community Kitchen">Community Kitchen</option>
+              <option value="Food Bank">Food Bank</option>
+              <option value="Charitable Organization">Charitable Organization</option>
+              <option value="Government Food Support Center">Government Food Support Center</option>
+              <option value="Religious or Community Organization">Religious or Community Organization</option>
+              <option value="Food Distribution Center">Food Distribution Center</option>
+              <option value="Other">Other (Custom Type)</option>
+            </select>
+          </div>
+
+          <div class="col-12 d-none" id="customTypeWrap">
+            <label for="f_custom_center_type" class="form-label">Specify Custom Center Type</label>
+            <input type="text" class="form-control" id="f_custom_center_type" name="custom_center_type" placeholder="e.g. University Student Relief Pantry">
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="f_community_id" class="form-label">Associated Community Area</label>
+            <select class="form-select" id="f_community_id" name="community_id">
+              <option value="">Select community area...</option>
+            </select>
+            <div class="form-text">Associates this center with a surveyed community and retrieves its default coordinates.</div>
+            <div class="invalid-feedback" data-error-for="community_id"></div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="f_landmark" class="form-label">Landmark</label>
+            <input type="text" class="form-control" id="f_landmark" name="landmark" placeholder="e.g. Opposite Government High School">
+          </div>
+
+          <div class="col-12">
+            <label for="f_address" class="form-label">Full Address</label>
+            <textarea class="form-control" id="f_address" name="address" rows="2" placeholder="Complete street address, door no, and road"></textarea>
+            <div class="invalid-feedback" data-error-for="address"></div>
+          </div>
+
+          <div class="col-sm-4">
+            <label for="f_pincode" class="form-label">Pincode</label>
+            <input type="text" class="form-control" id="f_pincode" name="pincode" placeholder="560001">
+          </div>
+
+          <div class="col-sm-4">
+            <label for="f_district" class="form-label">District</label>
+            <input type="text" class="form-control" id="f_district" name="district" placeholder="e.g. Bengaluru Urban">
+          </div>
+
+          <div class="col-sm-4">
+            <label for="f_state" class="form-label">State</label>
+            <input type="text" class="form-control" id="f_state" name="state" placeholder="e.g. Karnataka">
+          </div>
+
+          <div class="col-12">
+            <label for="f_description" class="form-label">Description / Mission</label>
+            <textarea class="form-control" id="f_description" name="description" rows="3" placeholder="Brief summary of operations, target beneficiaries, and mission."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION B: LOCATION & COORDINATES -->
+      <section class="mb-4">
+        <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+          <span class="badge bg-primary rounded-circle me-2 p-2">B</span>
+          <h2 class="h5 mb-0">Location & Reference Coordinates</h2>
+        </div>
+
+        <div class="notice mb-3" id="locationNotice" role="status">
+          <div class="d-flex align-items-center">
+            <span class="badge bg-secondary me-2" id="locationSourceBadge">Community Reference</span>
+            <span id="locationSourceText">Select a community above to load reference coordinates, or click anywhere on the map to pinpoint the exact center location.</span>
+          </div>
+          <div class="mt-1 small" id="distanceCalcDisplay"></div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12">
+            <div id="centerPickerMap" style="height: 320px; border-radius: 8px; border: 1px solid var(--line-strong);" role="application" aria-label="Interactive Leaflet map for pinpointing center location"></div>
+            <div class="form-text mt-1 d-flex justify-content-between">
+              <span>Click the map to place or drag the blue marker to the center's exact location.</span>
+              <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" id="toggleCoordsBtn">
+                Show / Edit Coordinates Manually
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible coordinates block -->
+          <div class="col-12 d-none" id="manualCoordsRow">
+            <div class="p-3 bg-light rounded border">
+              <div class="row g-2">
+                <div class="col-sm-6">
+                  <label for="f_latitude" class="form-label small">Latitude <span class="req">*</span></label>
+                  <input type="text" inputmode="decimal" class="form-control form-control-sm" id="f_latitude" name="latitude" placeholder="12.9716">
+                  <div class="invalid-feedback" data-error-for="latitude"></div>
+                </div>
+                <div class="col-sm-6">
+                  <label for="f_longitude" class="form-label small">Longitude <span class="req">*</span></label>
+                  <input type="text" inputmode="decimal" class="form-control form-control-sm" id="f_longitude" name="longitude" placeholder="77.5946">
+                  <div class="invalid-feedback" data-error-for="longitude"></div>
+                </div>
+                <input type="hidden" id="f_location_source" name="location_source" value="community_reference">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION C: CONTACT INFORMATION -->
+      <section class="mb-4">
+        <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+          <span class="badge bg-primary rounded-circle me-2 p-2">C</span>
+          <h2 class="h5 mb-0">Contact Information</h2>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label for="f_primary_contact_name" class="form-label">Primary Contact Person Name</label>
+            <input type="text" class="form-control" id="f_primary_contact_name" name="primary_contact_name" placeholder="e.g. Rajesh Kumar">
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_contact_designation" class="form-label">Contact Person Designation</label>
+            <input type="text" class="form-control" id="f_contact_designation" name="contact_designation" placeholder="e.g. Center Manager / Trustee">
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_phone_number" class="form-label">Primary Phone Number <span class="req">*</span></label>
+            <input type="tel" class="form-control" id="f_phone_number" name="phone_number" required placeholder="e.g. +91 98450 12345" autocomplete="off">
+            <div class="invalid-feedback" data-error-for="phone_number"></div>
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_alternative_phone" class="form-label">Alternative Phone Number</label>
+            <input type="tel" class="form-control" id="f_alternative_phone" name="alternative_phone" placeholder="e.g. 080 2234 5678">
+            <div class="invalid-feedback" data-error-for="alternative_phone"></div>
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_email" class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="f_email" name="email" placeholder="contact@foodcenter.org">
+            <div class="invalid-feedback" data-error-for="email"></div>
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_website" class="form-label">Official Website Link</label>
+            <input type="url" class="form-control" id="f_website" name="website" placeholder="https://www.foodcenter.org">
+            <div class="invalid-feedback" data-error-for="website"></div>
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_whatsapp_number" class="form-label">WhatsApp Number</label>
+            <input type="tel" class="form-control" id="f_whatsapp_number" name="whatsapp_number" placeholder="e.g. +91 98450 12345">
+            <div class="invalid-feedback" data-error-for="whatsapp_number"></div>
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_preferred_contact_method" class="form-label">Preferred Contact Method</label>
+            <select class="form-select" id="f_preferred_contact_method" name="preferred_contact_method">
+              <option value="Phone Call">Phone Call</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Email">Email</option>
+              <option value="Website">Website</option>
+              <option value="Visit in Person">Visit in Person</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION D: FOOD-SUPPORT DETAILS -->
+      <section class="mb-4">
+        <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+          <span class="badge bg-primary rounded-circle me-2 p-2">D</span>
+          <h2 class="h5 mb-0">Food Support Details</h2>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-medium d-block">Types of Food Support Provided (Select all that apply)</label>
+          <div class="row g-2">
+            <div class="col-6 col-md-3">
+              <div class="form-check">
+                <input class="form-check-input food-type-check" type="checkbox" value="Free Meals" id="ft_meals">
+                <label class="form-check-label small" for="ft_meals">Free Meals</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="form-check">
+                <input class="form-check-input food-type-check" type="checkbox" value="Groceries" id="ft_groceries">
+                <label class="form-check-label small" for="ft_groceries">Groceries / Dry Rations</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="form-check">
+                <input class="form-check-input food-type-check" type="checkbox" value="Food Packages" id="ft_packages">
+                <label class="form-check-label small" for="ft_packages">Food Packages</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="form-check">
+                <input class="form-check-input food-type-check" type="checkbox" value="Emergency Food Assistance" id="ft_emergency">
+                <label class="form-check-label small" for="ft_emergency">Emergency Relief</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="form-check">
+                <input class="form-check-input food-type-check" type="checkbox" value="Community Kitchen" id="ft_kitchen">
+                <label class="form-check-label small" for="ft_kitchen">Community Kitchen</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="form-check">
+                <input class="form-check-input food-type-check" type="checkbox" value="Child Nutrition Support" id="ft_child">
+                <label class="form-check-label small" for="ft_child">Child Nutrition Support</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="form-check">
+                <input class="form-check-input food-type-check" type="checkbox" value="Elderly Food Assistance" id="ft_elderly">
+                <label class="form-check-label small" for="ft_elderly">Elderly Food Assistance</label>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="form-check">
+                <input class="form-check-input food-type-check" type="checkbox" value="Other" id="ft_other">
+                <label class="form-check-label small" for="ft_other">Other</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label for="f_meals_available" class="form-label">Meals Available</label>
+            <input type="text" class="form-control" id="f_meals_available" name="meals_available" placeholder="e.g. Lunch (Rice, Dal, Veg) & Dry Rations">
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_distribution_schedule" class="form-label">Distribution Schedule</label>
+            <input type="text" class="form-control" id="f_distribution_schedule" name="distribution_schedule" placeholder="e.g. Daily: 12:30 PM - 2:00 PM">
+          </div>
+
+          <div class="col-sm-4">
+            <label for="f_operating_days" class="form-label">Operating Days</label>
+            <input type="text" class="form-control" id="f_operating_days" name="operating_days" placeholder="e.g. Monday to Saturday">
+          </div>
+
+          <div class="col-sm-4">
+            <label for="f_operating_hours" class="form-label">Operating Hours</label>
+            <input type="text" class="form-control" id="f_operating_hours" name="operating_hours" placeholder="e.g. 10:00 AM - 4:00 PM">
+          </div>
+
+          <div class="col-sm-4">
+            <label for="f_people_served_per_day" class="form-label">Approx. People Served Daily</label>
+            <input type="number" min="0" class="form-control" id="f_people_served_per_day" name="people_served_per_day" placeholder="e.g. 150">
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="f_eligibility_requirements" class="form-label">Eligibility Requirements</label>
+            <input type="text" class="form-control" id="f_eligibility_requirements" name="eligibility_requirements" placeholder="e.g. Open to all / Low-income households">
+          </div>
+
+          <div class="col-sm-3">
+            <label for="f_registration_required" class="form-label">Registration Required?</label>
+            <select class="form-select" id="f_registration_required" name="registration_required">
+              <option value="Unknown">Unknown</option>
+              <option value="No">No (Walk-in)</option>
+              <option value="Yes">Yes (Pre-registration)</option>
+            </select>
+          </div>
+
+          <div class="col-sm-3">
+            <label for="f_availability_status" class="form-label">Currently Serving?</label>
+            <select class="form-select" id="f_availability_status" name="availability_status">
+              <option value="Yes">Yes (Active)</option>
+              <option value="No">No (Paused)</option>
+              <option value="Unknown" selected>Unknown</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION E: VERIFICATION AND FOLLOW-UP -->
+      <section class="mb-4">
+        <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+          <span class="badge bg-primary rounded-circle me-2 p-2">E</span>
+          <h2 class="h5 mb-0">Verification and Follow-Up</h2>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label for="f_information_status" class="form-label">Information Status</label>
+            <select class="form-select" id="f_information_status" name="information_status">
+              <option value="Newly Added" selected>Newly Added</option>
+              <option value="Not Contacted">Not Contacted</option>
+              <option value="Contacted">Contacted</option>
+              <option value="Information Partially Verified">Information Partially Verified</option>
+              <option value="Verified">Verified</option>
+              <option value="Unable to Reach">Unable to Reach</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div class="col-sm-6 d-flex align-items-end gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btnMarkContactedQuick">
+              Mark as Contacted Today
+            </button>
+            <button type="button" class="btn btn-outline-success btn-sm" id="btnMarkVerifiedQuick">
+              Mark as Verified
+            </button>
+          </div>
+
+          <div class="col-sm-4">
+            <label for="f_contact_attempt_date" class="form-label">Contact Attempt Date</label>
+            <input type="date" class="form-control" id="f_contact_attempt_date" name="contact_attempt_date">
+          </div>
+
+          <div class="col-sm-4">
+            <label for="f_last_contacted_date" class="form-label">Last Contacted Date</label>
+            <input type="date" class="form-control" id="f_last_contacted_date" name="last_contacted_date">
+          </div>
+
+          <div class="col-sm-4">
+            <label for="f_next_followup_date" class="form-label">Next Follow-Up Date</label>
+            <input type="date" class="form-control" id="f_next_followup_date" name="next_followup_date">
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_contacted_by" class="form-label">Person Who Contacted the Center</label>
+            <input type="text" class="form-control" id="f_contacted_by" name="contacted_by" placeholder="e.g. Volunteer / Field Officer name">
+          </div>
+
+          <div class="col-sm-6">
+            <label for="f_information_source" class="form-label">Information Source</label>
+            <input type="text" class="form-control" id="f_information_source" name="information_source" placeholder="e.g. In-person visit, Phone interview, NGO directory">
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="f_contact_notes" class="form-label">Contact Notes</label>
+            <textarea class="form-control" id="f_contact_notes" name="contact_notes" rows="2" placeholder="Record of conversations, follow-up calls, questions asked."></textarea>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="f_verification_notes" class="form-label">Verification Notes</label>
+            <textarea class="form-control" id="f_verification_notes" name="verification_notes" rows="2" placeholder="Official verification findings, confirming documents, remarks."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <div class="form-actions mt-4 pt-3 border-top d-flex gap-2">
+        <button type="submit" class="btn btn-primary px-4" id="fullSubmitBtn">
+          {{ 'Save Changes' if editing else 'Save Food-Support Center' }}
+        </button>
+        <a href="{{ url_for('main.centers_page') }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/add_center.js') }}"></script>
+{% endblock %}
