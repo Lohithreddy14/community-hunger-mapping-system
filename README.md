@@ -23,8 +23,9 @@ It stores surveyed community information, calculates transparent **relative vuln
 10. [How to add and manage Food-Support Centers](#10-how-to-add-and-manage-food-support-centers)
 11. [API endpoints](#11-api-endpoints)
 12. [Running the automated tests](#12-running-the-automated-tests)
-13. [Troubleshooting](#13-troubleshooting)
-14. [How to demonstrate this project to your guide](#14-how-to-demonstrate-this-project-to-your-guide)
+13. [Academic Documentation & Viva Preparation](#13-academic-documentation--viva-preparation)
+14. [Troubleshooting](#14-troubleshooting)
+15. [How to demonstrate this project to your guide](#15-how-to-demonstrate-this-project-to-your-guide)
 
 ---
 
@@ -333,9 +334,26 @@ python -m unittest discover tests -v
 ```
 All tests run against an isolated in-memory/temporary SQLite database, preserving your project database records.
 
+To run the end-to-end integration workflow test (16 sequential simulated user steps):
+```powershell
+python tests/test_workflow_verification.py
+```
+
 ---
 
-## 13. Troubleshooting
+## 13. Academic Documentation & Viva Preparation
+
+Comprehensive academic documentation and presentation assets are located in the [`documentation/`](documentation/) directory:
+
+- [Project Report (23 Chapters)](documentation/project_report.md): Formal academic capstone report covering system design, database schemas, Leaflet GIS engine, vulnerability formulation, API specs, security, and test verification.
+- [Presentation Outline & Viva Script](documentation/presentation_outline.md): Slide-by-slide structure, timings, speaker notes, and 5-minute live demonstration script.
+- [Project Exhibition Poster](documentation/project_poster.md): Complete design and textual content for college project exhibition / poster presentation.
+- [Top 25 Viva Questions & Answers](documentation/viva_questions_and_answers.md): Model answers across technical, architectural, algorithmic, GIS, and ethical domains.
+- [Project Completion Checklist](documentation/completion_checklist.md): Itemized verification matrix across 12 engineering categories confirming 100% completion.
+
+---
+
+## 14. Troubleshooting
 
 - **Port 5000 in use**: Run `python app.py` on a different port by editing `app.run(port=5050)` or closing conflicting programs.
 - **Database permission error**: Close the running Flask server before executing `python init_db.py --reset`.
@@ -343,7 +361,7 @@ All tests run against an isolated in-memory/temporary SQLite database, preservin
 
 ---
 
-## 14. How to demonstrate this project to your guide
+## 15. How to demonstrate this project to your guide
 
 Here is a recommended 5-minute walkthrough for your project guide:
 
@@ -372,3 +390,4 @@ Here is a recommended 5-minute walkthrough for your project guide:
    - Save and show that the status badge updates to **Actual Center Location**.
 6. **Automated Tests**:
    - Run `python -m unittest discover tests -v` in terminal to prove that all 38 test cases pass.
+   - Run `python tests/test_workflow_verification.py` to demonstrate 16/16 end-to-end integration workflows.
